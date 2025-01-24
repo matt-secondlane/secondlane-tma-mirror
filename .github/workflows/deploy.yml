@@ -30,9 +30,17 @@ jobs:
           
       - name: Copy TMA files
         run: |
-          rm -rf ./* # Clear current directory except .git
-          cp -r tma-source/* ./ # Copy all files from the TMA repo
-          rm -rf tma-source # Clean up the temporary directory
+          # Save the .git directory
+          mv .git git-backup
+          # Remove everything except tma-source and git-backup
+          find . -mindepth 1 -maxdepth 1 ! -name 'tma-source' ! -name 'git-backup' -exec rm -rf {} +
+          # Copy TMA files
+          cp -r tma-source/* ./
+          # Restore .git
+          rm -rf .git
+          mv git-backup .git
+          # Clean up
+          rm -rf tma-source
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
