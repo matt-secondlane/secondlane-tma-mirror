@@ -44,12 +44,12 @@ jobs:
         run: |
           # Production deployment for tags
           echo "ENVIRONMENT=production" >> $GITHUB_ENV
-          echo "SECONDLANE_API_URL=https://api.secondlane.io" >> $GITHUB_ENV
+          echo "SECONDLANE_API_URL=https://prod.secondlane.io" >> $GITHUB_ENV
           
       - name: Create env file
         run: |
           echo "VITE_SECONDLANE_API_URL=${{ env.SECONDLANE_API_URL }}" >> .env
-          echo "VITE_API_URL=https://app.secondlane.io" >> .env
+          echo "VITE_API_URL=http://127.0.0.1:5173" >> .env
           echo "VITE_IS_TEST_ENV=false" >> .env
           
       - name: Install dependencies
