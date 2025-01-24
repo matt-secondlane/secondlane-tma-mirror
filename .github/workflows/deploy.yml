@@ -1,0 +1,78 @@
+# Deploy to prod
+
+name: Deploy Production
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+on:
+  repository_dispatch:
+    types: [production_deploy]
+  workflow_dispatch:  # Allow manual triggers
+
+jobs:
+  build:
+    environment:
+      name: production
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production mirror repo
+        uses: actions/checkout@v3
+        
+      - name: Checkout secondlane-tma repo
+        uses: actions/checkout@v3
+        with:
+          repository: matt-secondlane/secondlane-tma
+          ref: ${{ github.event.client_payload.tag }}
+          path: tma-source
+          
+      - name: Copy TMA files
+        run: |
+          rm -rf ./* # Clear current directory except .git
+          cp -r tma-source/* ./ # Copy all files from the TMA repo
+          rm -rf tma-source # Clean up the temporary directory
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Set environment variables
+        run: |
+          # Production deployment for tags
+          echo "ENVIRONMENT=production" >> $GITHUB_ENV
+          echo "SECONDLANE_API_URL=https://api.secondlane.io" >> $GITHUB_ENV
+          
+      - name: Create env file
+        run: |
+          echo "VITE_SECONDLANE_API_URL=${{ env.SECONDLANE_API_URL }}" >> .env
+          echo "VITE_API_URL=https://app.secondlane.io" >> .env
+          echo "VITE_IS_TEST_ENV=false" >> .env
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build
+        run: npm run build:${{ env.ENVIRONMENT }}
+        
+      - name: Log deployment info
+        run: |
+          echo "Deploying to ${{ env.ENVIRONMENT }} environment"
+          echo "Using API URL: ${{ env.SECONDLANE_API_URL }}"
+          echo "Deploying tag: ${{ github.event.client_payload.tag }}"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
+
