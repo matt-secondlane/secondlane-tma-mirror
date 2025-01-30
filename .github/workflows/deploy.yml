@@ -19,15 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout production mirror repo
-        uses: actions/checkout@v3
-        
+        uses: actions/checkout@v4
+
       - name: Checkout secondlane-tma repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: matt-secondlane/secondlane-tma
           ref: ${{ github.event.client_payload.tag }}
           path: tma-source
-          
+
       - name: Copy TMA files
         run: |
           # Save the .git directory
@@ -41,7 +41,7 @@ jobs:
           mv git-backup .git
           # Clean up
           rm -rf tma-source
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -53,19 +53,19 @@ jobs:
           # Production deployment for tags
           echo "ENVIRONMENT=production" >> $GITHUB_ENV
           echo "SECONDLANE_API_URL=https://prod.secondlane.io" >> $GITHUB_ENV
-          
+
       - name: Create env file
         run: |
           echo "VITE_SECONDLANE_API_URL=${{ env.SECONDLANE_API_URL }}" >> .env
           echo "VITE_API_URL=http://127.0.0.1:5173" >> .env
           echo "VITE_IS_TEST_ENV=false" >> .env
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build
         run: npm run build:${{ env.ENVIRONMENT }}
-        
+
       - name: Log deployment info
         run: |
           echo "Deploying to ${{ env.ENVIRONMENT }} environment"
